@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUPER ADMIN PULT</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
+        .header { background: #1e293b; color: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 5px solid #2563eb; transition: 0.3s; }
+        .card.blocked { border-left-color: #ef4444; background: #fef2f2; opacity: 0.8; }
+        .btn { padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; margin-right: 5px; margin-top: 10px; }
+        .btn-green { background: #10b981; } .btn-blue { background: #2563eb; } .btn-red { background: #ef4444; } .btn-dark { background: #1e293b; }
+        .btn-delete { background: #7f1d1d; } /* O'chirish tugmasi uchun to'q qizil */
+        .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; margin-left: 10px; }
+        .b-mini { background: #64748b; } .b-standart { background: #3b82f6; } .b-premium { background: #f59e0b; }
+        select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; }
+        
+        #login-screen { position: fixed; inset: 0; background: #1e293b; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 320px; }
+        .login-box input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h2 style="color:var(--dark); margin-top:0;">SUPER ADMIN</h2>
+            <p style="color:#666; font-size:14px;">Boshqaruv pultiga xush kelibsiz.</p>
+            <input type="password" id="admin-pass" placeholder="Maxfiy parolni kiriting">
+            <button class="btn btn-blue" style="width: 100%; justify-content: center; padding:12px; font-size:16px;" onclick="checkAdmin()">KIRISH</button>
+        </div>
+    </div>
+
+    <div id="main-pult" style="display: none; max-width: 1000px; margin: 0 auto;">
+        <div class="header">
+            <div>
+                <h2 style="margin: 0;">KEENG MARKET - BOSH PULT</h2>
+                <div style="margin-top:5px; color:#cbd5e1;">Jami do'konlar: <b id="total-shops" style="color:white; font-size:18px;">0</b> ta</div>
+            </div>
+            <button class="btn btn-red" onclick="location.reload()">Chiqish</button>
+        </div>
+
+        <div id="shops-list">
+            <h3 style="text-align:center; color:#666; margin-top: 50px;">Ma'lumotlar Firebase'dan yuklanmoqda...</h3>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA8F47YRcEPTIwyI7AjSeqXIyddFpz8orU",
+            authDomain: "keeng-market.firebaseapp.com",
+            databaseURL: "https://keeng-market-default-rtdb.firebaseio.com",
+            projectId: "keeng-market",
+            storageBucket: "keeng-market.firebasestorage.app",
+            messagingSenderId: "688523074873",
+            appId: "1:688523074873:web:016b69f98a238bd19d5ce8"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let barchaDokonlar = {};
+
+        function checkAdmin() {
+            const p = document.getElementById('admin-pass').value;
+            if (p === 'admin2026') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('main-pult').style.display = 'block';
+                loadShops();
+            } else { alert("Parol xato!"); }
+        }
+
+        function loadShops() {
+            db.ref("saas_dokonlar").on("value", snap => {
+                const list = document.getElementById('shops-list');
+                if (!snap.exists()) { 
+                    list.innerHTML = "<h3 style='text-align:center;'>Hozircha do'konlar yo'q.</h3>"; 
+                    document.getElementById('total-shops').innerText = "0";
+                    return; 
+                }
+
+                barchaDokonlar = snap.val();
+                const keys = Object.keys(barchaDokonlar);
+                document.getElementById('total-shops').innerText = keys.length;
+                
+                let html = "";
+                keys.forEach(phone => {
+                    const shop = barchaDokonlar[phone];
+                    const s = shop.sozlamalar || {};
+
+                    const isBlocked = s.status === 'bloklangan';
+                    const bColor = isBlocked ? 'blocked' : '';
+                    
+                    let daysText = "";
+                    let expStr = s.obuna_tugash_sanasi;
+
+                    if (!expStr) {
+                        expStr = "Kiritilmagan";
+                        daysText = `<span style="color:red; font-weight:bold;">TUGAGAN (Eski akkaunt)</span>`;
+                    } else {
+                        const expDate = new Date(expStr);
+                        const today = new Date();
+                        const diffTime = expDate.getTime() - today.getTime();
+                        const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
+                        
+                        daysText = diffDays > 0 ? 
+                            `<span style="color:green; font-weight:bold;">${diffDays} kun qoldi</span>` : 
+                            `<span style="color:red; font-weight:bold;">TUGAGAN (${Math.abs(diffDays)} kun o'tdi)</span>`;
+                    }
+                    
+                    html += `
+                    <div class="card ${bColor}">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px;">
+                            <div>
+                                <h2 style="margin:0 0 5px 0; color:var(--dark);">${s.dokon_nomi || 'Nomsiz do\'kon'} <span class="badge b-${s.tarif || 'mini'}">${(s.tarif || 'mini').toUpperCase()}</span></h2>
+                                <div style="color:#666; font-size:14px;">Tel (Login): <b>${s.telefon || phone}</b> | Parol: <b>${s.parol || 'Yo\'q'}</b></div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:18px; margin-bottom:5px;">${daysText}</div>
+                                <div style="font-size:12px; color:#999;">Tugaydi: ${expStr}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="border-top: 1px solid #eee; padding-top: 15px; display:flex; flex-wrap:wrap; align-items:center;">
+                            <button class="btn btn-green" onclick="addMonth('${phone}')"><i class="fas fa-calendar-plus"></i> +30 KUN QO'SHISH</button>
+                            
+                            <button class="btn ${isBlocked ? 'btn-blue' : 'btn-red'}" onclick="toggleBlock('${phone}', '${s.status || 'faol'}')">
+                                <i class="fas ${isBlocked ? 'fa-unlock' : 'fa-lock'}"></i> ${isBlocked ? 'QULFDAN OCHISH' : 'BLOKLASH'}
+                            </button>
+
+                            <button class="btn btn-delete" onclick="deleteShop('${phone}')">
+                                <i class="fas fa-trash-alt"></i> O'CHIRISH
+                            </button>
+                            
+                            <div style="margin-left:auto; display:flex; align-items:center; gap:5px; margin-top:10px;">
+                                <select id="tar-${phone}">
+                                    <option value="mini" ${s.tarif==='mini'?'selected':''}>MINI</option>
+                                    <option value="standart" ${s.tarif==='standart'?'selected':''}>STANDART</option>
+                                    <option value="premium" ${s.tarif==='premium'?'selected':''}>PREMIUM</option>
+                                </select>
+                                <button class="btn btn-dark" style="margin:0;" onclick="changeTariff('${phone}')">O'zgartirish</button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                list.innerHTML = html;
+            });
+        }
+
+        function addMonth(phone) {
+            if(confirm("Mijozga 30 kun qo'shasizmi?")) {
+                const s = barchaDokonlar[phone].sozlamalar || {};
+                let exp = s.obuna_tugash_sanasi ? new Date(s.obuna_tugash_sanasi) : new Date();
+                let today = new Date();
+                
+                if (exp < today) exp = new Date(); 
+                exp.setDate(exp.getDate() + 30);
+                
+                db.ref("saas_dokonlar/" + phone + "/sozlamalar/obuna_tugash_sanasi").set(exp.toISOString().split('T')[0]);
+                if(s.status === 'bloklangan') {
+                    db.ref("saas_dokonlar/" + phone + "/sozlamalar/status").set('faol');
+                }
+            }
+        }
+
+        function toggleBlock(phone, currentStatus) {
+            const newStatus = currentStatus === 'bloklangan' ? 'faol' : 'bloklangan';
+            const msg = newStatus === 'bloklangan' ? "Ushbu do'konni bloklaysizmi? (Mijoz dasturga kirelmaydi va xaridorlar mini-app ishlata olmaydi)" : "Do'konni qulfdan ochasizmi?";
+            if(confirm(msg)) {
+                db.ref("saas_dokonlar/" + phone + "/sozlamalar/status").set(newStatus);
+            }
+        }
+
+        // YANGI QO'SHILGAN O'CHIRISH FUNKSIYASI
+        function deleteShop(phone) {
+            const msg = "DIQQAT! Bu do'kon va uning barcha ma'lumotlari (ombor, qarzlar, hisobotlar) butunlay o'chib ketadi. Buni ortga qaytarib bo'lmaydi!\n\nRostdan ham o'chirasizmi?";
+            if(confirm(msg)) {
+                db.ref("saas_dokonlar/" + phone).remove()
+                .then(() => {
+                    alert("Do'kon muvaffaqiyatli o'chirildi!");
+                })
+                .catch(err => {
+                    alert("Xatolik yuz berdi: " + err);
+                });
+            }
+        }
+
+        function changeTariff(phone) {
+            const newTarif = document.getElementById('tar-' + phone).value;
+            if(confirm("Tarifni " + newTarif.toUpperCase() + " ga o'zgartirasizmi?")) {
+                db.ref("saas_dokonlar/" + phone + "/sozlamalar/tarif").set(newTarif);
+            }
+        }
+    </script>
+</body>
+</html>
