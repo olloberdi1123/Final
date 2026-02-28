@@ -2,198 +2,274 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUPER ADMIN PULT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SaaS - Bosh Pult</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
-        .header { background: #1e293b; color: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 5px solid #2563eb; transition: 0.3s; }
-        .card.blocked { border-left-color: #ef4444; background: #fef2f2; opacity: 0.8; }
-        .btn { padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; margin-right: 5px; margin-top: 10px; }
-        .btn-green { background: #10b981; } .btn-blue { background: #2563eb; } .btn-red { background: #ef4444; } .btn-dark { background: #1e293b; }
-        .btn-delete { background: #7f1d1d; } /* O'chirish tugmasi uchun to'q qizil */
-        .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; margin-left: 10px; }
-        .b-mini { background: #64748b; } .b-standart { background: #3b82f6; } .b-premium { background: #f59e0b; }
-        select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; }
+        :root { --blue: #2563eb; --green: #10b981; --red: #ef4444; --dark: #1e293b; --bg: #f4f6f8; --orange: #f59e0b; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { margin: 0; background: var(--bg); color: #333; }
         
-        #login-screen { position: fixed; inset: 0; background: #1e293b; display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .login-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 320px; }
-        .login-box input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
+        /* LOGIN SCREEN */
+        #login-screen { display: flex; height: 100vh; align-items: center; justify-content: center; background: var(--dark); padding: 20px; }
+        .login-box { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .login-box input { width: 100%; padding: 15px; margin: 15px 0; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 18px; text-align: center; outline: none; }
+        .login-box button { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        
+        /* MAIN PULT */
+        #main-screen { display: none; padding-bottom: 50px; }
+        .header { background: var(--dark); color: white; padding: 25px 20px; border-radius: 0 0 25px 25px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header h1 { margin: 0; font-size: 20px; }
+        .header p { margin: 5px 0 0 0; color: #94a3b8; font-size: 14px; }
+        .btn-logout { background: var(--red); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        .container { padding: 0 15px; max-width: 800px; margin: 0 auto; }
+        
+        .shop-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 6px solid var(--blue); position: relative; }
+        .shop-card.blocked { border-left-color: var(--red); opacity: 0.9; }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .shop-name { font-size: 22px; font-weight: bold; margin: 0; color: var(--dark); display: flex; align-items: center; gap: 10px; }
+        .badge { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; color: white; text-transform: uppercase; }
+        .bg-premium { background: var(--orange); } .bg-standart { background: var(--blue); } .bg-mini { background: #64748b; }
+        
+        .days-left { text-align: right; }
+        .days-number { font-size: 18px; font-weight: bold; color: var(--green); margin: 0; }
+        .days-number.danger { color: var(--red); }
+        .exp-date { font-size: 12px; color: #94a3b8; margin: 0; }
+        
+        .info-text { font-size: 14px; color: #475569; margin: 5px 0; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
+        
+        .grid-btn { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn { padding: 10px; border: none; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn:active { transform: scale(0.97); }
+        .btn-green { background: var(--green); } .btn-red { background: var(--red); } .btn-dark { background: var(--dark); } .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: var(--dark); }
+        
+        .action-row { display: flex; gap: 10px; margin-top: 10px; }
+        select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: bold; outline: none; flex-grow: 1; }
+        
+        .feature-box { background: #f8fafc; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
         <div class="login-box">
-            <h2 style="color:var(--dark); margin-top:0;">SUPER ADMIN</h2>
-            <p style="color:#666; font-size:14px;">Boshqaruv pultiga xush kelibsiz.</p>
-            <input type="password" id="admin-pass" placeholder="Maxfiy parolni kiriting">
-            <button class="btn btn-blue" style="width: 100%; justify-content: center; padding:12px; font-size:16px;" onclick="checkAdmin()">KIRISH</button>
+            <h2 style="margin-top:0; color:var(--dark);">BOSH PULT <i class="fas fa-star" style="color:var(--green);"></i></h2>
+            <p style="color:#666; font-size:14px;">Tizimga kirish uchun parolni kiriting</p>
+            <input type="password" id="admin-pass" placeholder="Parol">
+            <button onclick="checkLogin()">KIRISH</button>
         </div>
     </div>
 
-    <div id="main-pult" style="display: none; max-width: 1000px; margin: 0 auto;">
+    <div id="main-screen">
         <div class="header">
             <div>
-                <h2 style="margin: 0;">KEENG MARKET - BOSH PULT</h2>
-                <div style="margin-top:5px; color:#cbd5e1;">Jami do'konlar: <b id="total-shops" style="color:white; font-size:18px;">0</b> ta</div>
+                <h1>KEENG MARKET - BOSH PULT</h1>
+                <p>Jami do'konlar: <b id="total-shops" style="color:white; font-size:16px;">0</b> ta</p>
             </div>
-            <button class="btn btn-red" onclick="location.reload()">Chiqish</button>
+            <button class="btn-logout" onclick="logout()">Chiqish</button>
         </div>
-
-        <div id="shops-list">
-            <h3 style="text-align:center; color:#666; margin-top: 50px;">Ma'lumotlar Firebase'dan yuklanmoqda...</h3>
-        </div>
+        
+        <div class="container" id="shops-list">
+            </div>
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyA8F47YRcEPTIwyI7AjSeqXIyddFpz8orU",
-            authDomain: "keeng-market.firebaseapp.com",
-            databaseURL: "https://keeng-market-default-rtdb.firebaseio.com",
-            projectId: "keeng-market",
-            storageBucket: "keeng-market.firebasestorage.app",
-            messagingSenderId: "688523074873",
-            appId: "1:688523074873:web:016b69f98a238bd19d5ce8"
+        // O'ZINGIZNING FIREBASE KODINGIZ
+        const firebaseConfig = { 
+            apiKey: "AIzaSyA8F47YRcEPTIwyI7AjSeqXIyddFpz8orU", 
+            authDomain: "keeng-market.firebaseapp.com", 
+            databaseURL: "https://keeng-market-default-rtdb.firebaseio.com", 
+            projectId: "keeng-market", 
+            storageBucket: "keeng-market.firebasestorage.app", 
+            messagingSenderId: "688523074873", 
+            appId: "1:688523074873:web:016b69f98a238bd19d5ce8" 
         };
-        firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig); 
         const db = firebase.database();
 
-        let barchaDokonlar = {};
-
-        function checkAdmin() {
-            const p = document.getElementById('admin-pass').value;
-            if (p === 'admin2026') {
+        // 1. LOGIN QISMI
+        window.onload = () => {
+            if(localStorage.getItem('pult_logged') === 'true') {
                 document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('main-pult').style.display = 'block';
+                document.getElementById('main-screen').style.display = 'block';
                 loadShops();
-            } else { alert("Parol xato!"); }
+            }
+        };
+
+        function checkLogin() {
+            const pass = document.getElementById('admin-pass').value;
+            if(pass === '1123') { // PAROL SHU YERDA BELGILANGAN
+                localStorage.setItem('pult_logged', 'true');
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('main-screen').style.display = 'block';
+                loadShops();
+            } else {
+                alert("Parol xato!");
+            }
         }
 
+        function logout() {
+            localStorage.removeItem('pult_logged');
+            location.reload();
+        }
+
+        // 2. DO'KONLARNI YUKLASH
         function loadShops() {
             db.ref("saas_dokonlar").on("value", snap => {
                 const list = document.getElementById('shops-list');
-                if (!snap.exists()) { 
-                    list.innerHTML = "<h3 style='text-align:center;'>Hozircha do'konlar yo'q.</h3>"; 
-                    document.getElementById('total-shops').innerText = "0";
-                    return; 
+                list.innerHTML = '';
+                if(!snap.exists()) {
+                    list.innerHTML = '<h3 style="text-align:center; color:#666;">Hozircha do\'konlar yo\'q</h3>';
+                    document.getElementById('total-shops').innerText = '0';
+                    return;
                 }
-
-                barchaDokonlar = snap.val();
-                const keys = Object.keys(barchaDokonlar);
-                document.getElementById('total-shops').innerText = keys.length;
                 
-                let html = "";
-                keys.forEach(phone => {
-                    const shop = barchaDokonlar[phone];
-                    const s = shop.sozlamalar || {};
-
-                    const isBlocked = s.status === 'bloklangan';
-                    const bColor = isBlocked ? 'blocked' : '';
-                    
-                    let daysText = "";
-                    let expStr = s.obuna_tugash_sanasi;
-
-                    if (!expStr) {
-                        expStr = "Kiritilmagan";
-                        daysText = `<span style="color:red; font-weight:bold;">TUGAGAN (Eski akkaunt)</span>`;
-                    } else {
-                        const expDate = new Date(expStr);
-                        const today = new Date();
-                        const diffTime = expDate.getTime() - today.getTime();
-                        const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
-                        
-                        daysText = diffDays > 0 ? 
-                            `<span style="color:green; font-weight:bold;">${diffDays} kun qoldi</span>` : 
-                            `<span style="color:red; font-weight:bold;">TUGAGAN (${Math.abs(diffDays)} kun o'tdi)</span>`;
-                    }
-                    
-                    html += `
-                    <div class="card ${bColor}">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px;">
-                            <div>
-                                <h2 style="margin:0 0 5px 0; color:var(--dark);">${s.dokon_nomi || 'Nomsiz do\'kon'} <span class="badge b-${s.tarif || 'mini'}">${(s.tarif || 'mini').toUpperCase()}</span></h2>
-                                <div style="color:#666; font-size:14px;">Tel (Login): <b>${s.telefon || phone}</b> | Parol: <b>${s.parol || 'Yo\'q'}</b></div>
-                            </div>
-                            <div style="text-align:right;">
-                                <div style="font-size:18px; margin-bottom:5px;">${daysText}</div>
-                                <div style="font-size:12px; color:#999;">Tugaydi: ${expStr}</div>
-                            </div>
-                        </div>
-                        
-                        <div style="border-top: 1px solid #eee; padding-top: 15px; display:flex; flex-wrap:wrap; align-items:center;">
-                            <button class="btn btn-green" onclick="addMonth('${phone}')"><i class="fas fa-calendar-plus"></i> +30 KUN QO'SHISH</button>
-                            
-                            <button class="btn ${isBlocked ? 'btn-blue' : 'btn-red'}" onclick="toggleBlock('${phone}', '${s.status || 'faol'}')">
-                                <i class="fas ${isBlocked ? 'fa-unlock' : 'fa-lock'}"></i> ${isBlocked ? 'QULFDAN OCHISH' : 'BLOKLASH'}
-                            </button>
-
-                            <button class="btn btn-delete" onclick="deleteShop('${phone}')">
-                                <i class="fas fa-trash-alt"></i> O'CHIRISH
-                            </button>
-                            
-                            <div style="margin-left:auto; display:flex; align-items:center; gap:5px; margin-top:10px;">
-                                <select id="tar-${phone}">
-                                    <option value="mini" ${s.tarif==='mini'?'selected':''}>MINI</option>
-                                    <option value="standart" ${s.tarif==='standart'?'selected':''}>STANDART</option>
-                                    <option value="premium" ${s.tarif==='premium'?'selected':''}>PREMIUM</option>
-                                </select>
-                                <button class="btn btn-dark" style="margin:0;" onclick="changeTariff('${phone}')">O'zgartirish</button>
-                            </div>
-                        </div>
-                    </div>`;
-                });
-                list.innerHTML = html;
+                const data = snap.val();
+                let count = 0;
+                
+                for(let phone in data) {
+                    count++;
+                    const s = data[phone].sozlamalar || {};
+                    renderCard(phone, s);
+                }
+                document.getElementById('total-shops').innerText = count;
             });
         }
 
-        function addMonth(phone) {
-            if(confirm("Mijozga 30 kun qo'shasizmi?")) {
-                const s = barchaDokonlar[phone].sozlamalar || {};
-                let exp = s.obuna_tugash_sanasi ? new Date(s.obuna_tugash_sanasi) : new Date();
-                let today = new Date();
-                
-                if (exp < today) exp = new Date(); 
-                exp.setDate(exp.getDate() + 30);
-                
-                db.ref("saas_dokonlar/" + phone + "/sozlamalar/obuna_tugash_sanasi").set(exp.toISOString().split('T')[0]);
-                if(s.status === 'bloklangan') {
-                    db.ref("saas_dokonlar/" + phone + "/sozlamalar/status").set('faol');
+        function renderCard(phone, s) {
+            const expDate = new Date(s.obuna_tugash_sanasi || new Date());
+            const today = new Date();
+            const diffTime = expDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            let daysText = diffDays > 0 ? `${diffDays} kun qoldi` : `Tugagan (${Math.abs(diffDays)} kun o'tdi)`;
+            let daysClass = diffDays <= 3 ? 'danger' : '';
+            
+            let badgeClass = s.tarif === 'premium' ? 'bg-premium' : (s.tarif === 'standart' ? 'bg-standart' : 'bg-mini');
+            let isBlocked = s.status === 'bloklangan';
+            let cardBlockClass = isBlocked ? 'blocked' : '';
+            
+            let isKlientOn = s.klient_yoqilgan === true;
+            let jamiOy = s.jami_ishlagan_oy || 1; // Arxiv uchun: necha oy ishlagan
+
+            const html = `
+                <div class="shop-card ${cardBlockClass}">
+                    <div class="card-header">
+                        <h2 class="shop-name">
+                            ${s.dokon_nomi || 'Nomsiz'} 
+                            <span class="badge ${badgeClass}">${s.tarif ? s.tarif.toUpperCase() : 'MINI'}</span>
+                        </h2>
+                        <div class="days-left">
+                            <p class="days-number ${daysClass}">${isBlocked ? 'BLOKLANGAN' : daysText}</p>
+                            <p class="exp-date">Tugaydi: ${s.obuna_tugash_sanasi || '-'}</p>
+                        </div>
+                    </div>
+                    
+                    <p class="info-text">Tel (Login): <b>${phone}</b> | Parol: <b>${s.parol || '-'}</b></p>
+                    
+                    <div class="feature-box">
+                        <div>
+                            <span>Ishlagan davri (Arxiv): <b>${jamiOy} oy</b></span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span>Klient moduli: <b>${isKlientOn ? '<span style="color:var(--green)">YOQILGAN ✅</span>' : '<span style="color:var(--red)">O\'CHIK 🔒</span>'}</b></span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid-btn">
+                        <button class="btn btn-green" onclick="addDays('${phone}', '${s.obuna_tugash_sanasi}', ${jamiOy})"><i class="fas fa-calendar-plus"></i> +30 KUN QO'SHISH</button>
+                        ${isBlocked 
+                            ? `<button class="btn btn-dark" onclick="toggleBlock('${phone}', 'faol')"><i class="fas fa-unlock"></i> BLOKDAN CHIQARISH</button>`
+                            : `<button class="btn btn-red" onclick="toggleBlock('${phone}', 'bloklangan')"><i class="fas fa-lock"></i> BLOKLASH</button>`
+                        }
+                    </div>
+                    
+                    <div class="grid-btn">
+                        <button class="btn btn-outline" style="border-color:var(--blue); color:var(--blue);" onclick="toggleKlient('${phone}', ${isKlientOn})">
+                            <i class="fas fa-users"></i> Klientni ${isKlientOn ? "O'chirish" : "Yoqish"}
+                        </button>
+                        <button class="btn" style="background:#7f1d1d;" onclick="deleteShop('${phone}')"><i class="fas fa-trash"></i> O'CHIRISH</button>
+                    </div>
+                    
+                    <div class="action-row">
+                        <select id="tarif-sel-${phone}">
+                            <option value="mini" ${s.tarif==='mini'?'selected':''}>MINI (70,000)</option>
+                            <option value="standart" ${s.tarif==='standart'?'selected':''}>STANDART (90,000)</option>
+                            <option value="premium" ${s.tarif==='premium'?'selected':''}>PREMIUM (140,000)</option>
+                        </select>
+                        <button class="btn btn-dark" style="width:auto; padding:10px 20px;" onclick="changeTarif('${phone}')">O'zgartirish</button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('shops-list').insertAdjacentHTML('beforeend', html);
+        }
+
+        // 3. FUNKSIYALAR
+
+        function addDays(phone, currentExpStr, currentMonths) {
+            if(!confirm("Ushbu do'konga +30 kun qo'shilsinmi?")) return;
+            
+            let expDate = new Date(currentExpStr);
+            let today = new Date();
+            
+            // Agar muddati o'tib ketgan bo'lsa, bugundan boshlab 30 kun qo'shiladi
+            if(expDate < today || !currentExpStr) {
+                expDate = today;
+            }
+            
+            expDate.setDate(expDate.getDate() + 30);
+            const newExp = expDate.toISOString().split('T')[0];
+            const newMonths = currentMonths + 1; // Oylarni bittaga oshiramiz
+            
+            db.ref("saas_dokonlar/" + phone + "/sozlamalar").update({
+                obuna_tugash_sanasi: newExp,
+                status: 'faol',
+                jami_ishlagan_oy: newMonths
+            }).then(() => alert("Muvaffaqiyatli uzaytirildi!"));
+        }
+
+        function toggleBlock(phone, newStatus) {
+            let msg = newStatus === 'bloklangan' ? "Rostdan ham bloklaysizmi?" : "Blokdan chiqarilsinmi?";
+            if(!confirm(msg)) return;
+            
+            db.ref("saas_dokonlar/" + phone + "/sozlamalar").update({
+                status: newStatus
+            });
+        }
+
+        function deleteShop(phone) {
+            if(confirm("DIQQAT! Do'kon va uning BARCHA ma'lumotlari butunlay o'chib ketadi. Rozimisiz?")) {
+                if(prompt("Tasdiqlash uchun '1123' parolini yozing:") === '1123') {
+                    db.ref("saas_dokonlar/" + phone).remove().then(() => alert("Do'kon o'chirildi."));
+                } else {
+                    alert("Parol xato. Bekor qilindi.");
                 }
             }
         }
 
-        function toggleBlock(phone, currentStatus) {
-            const newStatus = currentStatus === 'bloklangan' ? 'faol' : 'bloklangan';
-            const msg = newStatus === 'bloklangan' ? "Ushbu do'konni bloklaysizmi? (Mijoz dasturga kirelmaydi va xaridorlar mini-app ishlata olmaydi)" : "Do'konni qulfdan ochasizmi?";
-            if(confirm(msg)) {
-                db.ref("saas_dokonlar/" + phone + "/sozlamalar/status").set(newStatus);
-            }
+        function changeTarif(phone) {
+            const newTarif = document.getElementById(`tarif-sel-${phone}`).value;
+            db.ref("saas_dokonlar/" + phone + "/sozlamalar").update({
+                tarif: newTarif
+            }).then(() => alert("Tarif muvaffaqiyatli o'zgartirildi!"));
+        }
+        
+        function toggleKlient(phone, currentState) {
+            let newState = !currentState;
+            let text = newState ? "Klient modulini YOQILDI (+10,000)" : "Klient moduli O'CHIRILDI";
+            
+            db.ref("saas_dokonlar/" + phone + "/sozlamalar").update({
+                klient_yoqilgan: newState
+            }).then(() => alert(text));
         }
 
-        // YANGI QO'SHILGAN O'CHIRISH FUNKSIYASI
-        function deleteShop(phone) {
-            const msg = "DIQQAT! Bu do'kon va uning barcha ma'lumotlari (ombor, qarzlar, hisobotlar) butunlay o'chib ketadi. Buni ortga qaytarib bo'lmaydi!\n\nRostdan ham o'chirasizmi?";
-            if(confirm(msg)) {
-                db.ref("saas_dokonlar/" + phone).remove()
-                .then(() => {
-                    alert("Do'kon muvaffaqiyatli o'chirildi!");
-                })
-                .catch(err => {
-                    alert("Xatolik yuz berdi: " + err);
-                });
-            }
-        }
-
-        function changeTariff(phone) {
-            const newTarif = document.getElementById('tar-' + phone).value;
-            if(confirm("Tarifni " + newTarif.toUpperCase() + " ga o'zgartirasizmi?")) {
-                db.ref("saas_dokonlar/" + phone + "/sozlamalar/tarif").set(newTarif);
-            }
-        }
     </script>
 </body>
 </html>
